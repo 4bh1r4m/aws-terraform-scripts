@@ -106,3 +106,64 @@ resource "aws_subnet" "private_4" {
     Name = "${var.project_name}-subnet-private4-${var.aws_region}b"
   }
 }
+
+#nat gateway setups
+resource "aws_eip" "nat" {
+  domain= "vpc"
+}
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_1.id
+
+  tags = {
+    Name = "${var.project_name}-nat-gw"
+  }
+}
+
+#public route table
+resource "aws_route_table" "public" {
+  vpc_id= aws_vpc.main.id
+  route{
+    cidr_block="0.0.0.0/0"
+    gateway_id= aws_internet_gateway.gw.id
+  }
+  tags={
+    Name= "${var.project_name}-public-rt"
+  }
+}
+#private routetable
+resource "aws_route_table" "private" {
+  vpc_id= aws_vpc.main.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+  tags= { 
+    Name = "${var.project_name}-rt-private" 
+    }
+}
+#assocation of public subnet with public route table
+resource "aws_route_table_association" "public_1" {
+  subnet_id      = aws_subnet.public_1.id
+  route_table_id = aws_route_table.public.id
+}
+resource "aws_route_table_association" "public_2" {
+  subnet_id      = aws_subnet.public_2.id
+  route_table_id = aws_route_table.public.id
+}
+resource "aws_route_table_association" "private_1" {
+  subnet_id      = aws_subnet.private_1.id
+  route_table_id = aws_route_table.private.id
+}
+resource "aws_route_table_association" "private_2" {
+  subnet_id      = aws_subnet.private_2.id
+  route_table_id = aws_route_table.private.id
+}
+resource "aws_route_table_association" "private_3" {
+  subnet_id      = aws_subnet.private_3.id
+  route_table_id = aws_route_table.private.id
+}
+resource "aws_route_table_association" "private_4" {
+  subnet_id      = aws_subnet.private_4.id
+  route_table_id = aws_route_table.private.id
+}
