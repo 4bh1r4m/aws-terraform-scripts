@@ -1,5 +1,5 @@
 terraform {
-    required_version = ">=1.5.0"
+  required_version = ">=1.5.0"
 
   required_providers {
     aws = {
@@ -8,7 +8,7 @@ terraform {
     }
   }
 
-/*
+  /*
 #TF-REMOTE-STATE: storing state in S3 instead of local file for safety
   backend "s3" {
     bucket         = "abhi-terraform-state-bucket"
