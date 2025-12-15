@@ -23,3 +23,8 @@ output "application_tier_a_private_ip" {
 output "application_tier_b_private_ip" {
   value = aws_instance.application_tier_instance_b.private_ip
 }
+
+output "alb_dns_name" {
+  description = "The DNS name of the Load Balancer"
+  value       = aws_lb.app_alb.dns_name
+}
