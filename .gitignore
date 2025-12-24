@@ -38,3 +38,4 @@ terraform.rc
 
 # ignore ssh key
 ed25*
+private_key.pem

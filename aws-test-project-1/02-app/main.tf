@@ -1,3 +1,4 @@
+/* 
 terraform {
   required_providers {
     aws = {
@@ -10,8 +11,6 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
-
-/* 
  */
  
 #find the zone I already created named pointbreak.space
@@ -158,11 +157,33 @@ resource "aws_route_table_association" "private_4" {
   route_table_id = aws_route_table.private.id
 }
 
+#Generate the private key
+resource "tls_private_key" "generated" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+#Save the private key to a local file
+resource "local_file" "private_key_pem" {
+  content         = tls_private_key.generated.private_key_pem
+  filename        = "${path.module}/private_key.pem"
+  file_permission = "0400"
+}
+
+/* 
 #key pair upload to aws
 resource "aws_key_pair" "deployer_key" {
   key_name   = "web-tier-key"
   public_key = file("${path.module}/ssh-keys/ed25519.pub")
 }
+*/
+
+#Use generated public key instead of file
+resource "aws_key_pair" "deployer_key" {
+  key_name   = "web-tier-key"
+  public_key = tls_private_key.generated.public_key_openssh
+}
+
 #security group for web tier
 resource "aws_security_group" "web_tier_sg" {
   name        = "web-tier-sg"
@@ -215,8 +236,10 @@ resource "aws_instance" "presentation_tier_instance_a" {
     # Pass the App Tier private IP to the web tier for Nginx reverse proxy
     app_tier_ip     = aws_instance.application_tier_instance_a.private_ip
     
-    # Pass the SSH key content for your jump host capability
-    ssh_private_key = file("${path.module}/ssh-keys/ed25519")
+    #Pass the SSH key content for your jump host capability
+    #ssh_private_key = file("${path.module}/ssh-keys/ed25519")
+
+    ssh_private_key = tls_private_key.generated.private_key_pem
   })
   user_data_replace_on_change = true
 }
@@ -240,7 +263,9 @@ resource "aws_instance" "presentation_tier_instance_b" {
     # Pass the App Tier private IP to the web tier for Nginx reverse proxy
     app_tier_ip     = aws_instance.application_tier_instance_b.private_ip
     
-    ssh_private_key = file("${path.module}/ssh-keys/ed25519")
+    #ssh_private_key = file("${path.module}/ssh-keys/ed25519")
+    #Inject generated private key directly
+    ssh_private_key = tls_private_key.generated.private_key_pem
   })
   user_data_replace_on_change = true
 }
